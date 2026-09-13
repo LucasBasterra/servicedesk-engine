@@ -1,0 +1,42 @@
+services:
+  servicedesk-db:
+    image: postgres:17-alpine
+    container_name: servicedesk-db
+    restart: always
+    environment:
+      POSTGRES_DB: servicedesk_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - servicedesk-network
+
+  servicedesk-api:
+    build:
+      context: ./ServiceDesk.Api
+      dockerfile: Dockerfile
+    container_name: servicedesk-api
+    restart: always
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=servicedesk-db;Database=servicedesk_db;Username=postgres;Password=postgrespassword
+      - JwtSettings__Secret=SUPER_SECRET_KEY_FOR_JWT_AUTHENTICATION_SERVICE_DESK_ENGINE_2026!
+      - JwtSettings__Issuer=ServiceDeskEngine
+      - JwtSettings__Audience=ServiceDeskClients
+      - JwtSettings__ExpirationInMinutes=60
+    depends_on:
+      - servicedesk-db
+    networks:
+      - servicedesk-network
+
+volumes:
+  postgres_data:
+
+networks:
+  servicedesk-network:
+    driver: bridge
